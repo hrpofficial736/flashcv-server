@@ -1,5 +1,5 @@
 
-export const successResponse = (statusCode: number, message: string, data?: any) => ({
+export const successResponse = (statusCode: number, message: string, data?: object) => ({
   statusCode,
   message,
   data,

@@ -15,13 +15,15 @@ datasource db {
 }
 
 model User {
-  id Int @id @unique @default(autoincrement())
-  name String
-  email String @unique
+  id          Int       @id @unique @default(autoincrement())
+  name        String
+  email       String        @unique
+  username    String        @unique
   avatarPhoto String?
-  resumeCount Int   @default(0)
-  anySocials AnySocials @default(NONE)
-  createdAt DateTime @default(now()) 
+  resumeCount Int                   @default(0)
+  resumes     String[]              @default([])
+  anySocials  AnySocials            @default(NONE)
+  createdAt   DateTime              @default(now()) 
 }
 
 
