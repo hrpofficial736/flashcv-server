@@ -8,14 +8,21 @@ export class SupabaseService {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  async uploadFile(fileBuffer: Buffer, fileName: string, username: string) : Promise<string | null>{
+  async uploadFile(
+    fileBuffer: Buffer,
+    fileName: string,
+    username: string,
+  ): Promise<string | null> {
     const bucket = process.env.SUPABASE_BUCKET_NAME;
     const filePath = `${username}/${fileName}`;
-    const { error } = await this.supabase.storage.from(bucket!).upload(filePath, fileBuffer);
+    const { error } = await this.supabase.storage
+      .from(bucket!)
+      .upload(filePath, fileBuffer, { contentType: 'application/pdf', upsert: true });
     if (error) {
-        console.error("Error uploading the file : ", error);
-        return null;
+      console.error('Error uploading the file : ', error);
+      return null;
     }
-    return this.supabase.storage.from(bucket!).getPublicUrl(filePath).data.publicUrl;
-}
+    return this.supabase.storage.from(bucket!).getPublicUrl(filePath).data
+      .publicUrl;
+  }
 }

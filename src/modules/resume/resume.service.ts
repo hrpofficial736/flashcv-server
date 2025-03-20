@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../supabase/supabase.service';
-import { errorResponse } from 'src/common/utils/response.util';
+import { errorResponse, successResponse } from 'src/common/utils/response.util';
 import { StatusCodes } from 'src/common/constants/status-codes';
 
 @Injectable()
@@ -20,19 +20,23 @@ export class ResumeService {
                 username,
               },
               select: {
-                resumes: true
+                resumes: true,
+                resumeCount: true
               }
             });
             if (!user)
               return errorResponse(StatusCodes.NOT_FOUND, 'User not found!');
-            await this.prismaService.user.update({
+            const updatedResumes = user.resumes.includes(url) ? user.resumes : [...user.resumes, url];
+           const updatedUser = await this.prismaService.user.update({
                 where: {
                     username
                 },
                 data: {
-                    resumes: {set: [...user.resumes, url!]}
+                    resumes: {set: updatedResumes},
+                    resumeCount: updatedResumes.length
                 }
-            })
+            });
+            return successResponse(StatusCodes.CREATED, "Resume uploaded by : " + username, updatedUser);
         } catch (error) {
             return errorResponse(StatusCodes.INTERNAL_SERVER_ERROR, error);
         }
