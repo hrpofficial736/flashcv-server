@@ -7,7 +7,7 @@ import { StatusCodes } from 'src/common/constants/status-codes';
 @Injectable()
 export class ResumeService {
     constructor(private prismaService : PrismaService, private supabaseService: SupabaseService) {};
-    async upload (fileBuffer: Buffer, fileName: string, username: string) {
+    async upload (fileBuffer: Buffer, fileName: string, username: string, title: string) {
         try {
             const url = await this.supabaseService.uploadFile(
               fileBuffer,
@@ -26,13 +26,15 @@ export class ResumeService {
             });
             if (!user)
               return errorResponse(StatusCodes.NOT_FOUND, 'User not found!');
-            const updatedResumes = user.resumes.includes(url) ? user.resumes : [...user.resumes, url];
+            const updatedResumes = Array.isArray(user.resumes)
+              ? [...user.resumes, { title: title, url: url }]
+              : [{ title: title, url: url }];
            const updatedUser = await this.prismaService.user.update({
                 where: {
                     username
                 },
                 data: {
-                    resumes: {set: updatedResumes},
+                    resumes: updatedResumes,
                     resumeCount: updatedResumes.length
                 }
             });

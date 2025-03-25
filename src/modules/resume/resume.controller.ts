@@ -12,6 +12,7 @@ export class ResumeController {
     @Req() req: Request,
     @Param('username') username: string,
     @Headers('x-file-name') fileName: string,
+    @Headers("resume-title") title: string
   ) {
     const fileBuffer : Buffer = await getRawBody(req, {encoding: null});
     console.log(
@@ -20,6 +21,6 @@ export class ResumeController {
       'Size:',
       fileBuffer.length,
     );
-    return this.service.upload(fileBuffer, fileName, username);
+    return this.service.upload(fileBuffer, fileName, username, title);
   }
 }

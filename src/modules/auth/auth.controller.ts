@@ -27,9 +27,9 @@ export class AuthController {
   @Post('signIn/:provider')
   @UseGuards(AuthGuard)
   signInWithProviderController (@Req() request: Request, @Param() params: {provider: string}) {
-    console.log(params.provider, request.user);
     
     if (request.user !== undefined) {
+      
       return this.authService.signInWithProvider(
       request.user["user_metadata"]["full_name"],
       request.user['email'],

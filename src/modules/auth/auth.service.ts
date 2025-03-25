@@ -8,7 +8,7 @@ import { AnySocials } from '@prisma/client';
 export class AuthService {
   constructor(private prismaService: PrismaService) {}
 
-  async login (email: string) {
+  async login(email: string) {
     try {
       const existingUser = await this.prismaService.user.findUnique({
         where: {
@@ -16,16 +16,18 @@ export class AuthService {
         },
       });
       if (existingUser) {
-        return successResponse(StatusCodes.OK, "User authenticated!", {
-          name: existingUser.name,
-          email: existingUser.email,
-          username: existingUser.username,
-          resumeCount: existingUser.resumeCount
-        })
+        return successResponse(
+          StatusCodes.OK,
+          'User authenticated!',
+          existingUser,
+        );
       }
-      return errorResponse(StatusCodes.NOT_FOUND, "User not found!")
+      return errorResponse(StatusCodes.NOT_FOUND, 'User not found!');
     } catch (error) {
-      return errorResponse(StatusCodes.INTERNAL_SERVER_ERROR, "Internal Server Error!")
+      return errorResponse(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Internal Server Error!',
+      );
     }
   }
 
@@ -37,25 +39,29 @@ export class AuthService {
         },
       });
       if (existingUser) {
-        return successResponse(StatusCodes.BAD_REQUEST, 'User already exists!', {
-          name: existingUser.name,
-          email: existingUser.email,
-          username: existingUser.username
-        });
+        return successResponse(
+          StatusCodes.BAD_REQUEST,
+          'User already exists!',
+          {
+            name: existingUser.name,
+            email: existingUser.email,
+            username: existingUser.username,
+          },
+        );
       }
-      const username = email.split("@")[0];
+      const username = email.split('@')[0];
       await this.prismaService.user.create({
         data: {
           name,
           email,
-          username
+          username,
         },
       });
-      return successResponse(StatusCodes.CREATED, "User created succesfully!", {
+      return successResponse(StatusCodes.CREATED, 'User created succesfully!', {
         name: name,
         email: email,
-        username: username
-      })
+        username: username,
+      });
     } catch (error) {
       return errorResponse(
         StatusCodes.INTERNAL_SERVER_ERROR,
@@ -63,9 +69,10 @@ export class AuthService {
       );
     }
   }
-  async signInWithProvider (name: string, email: string, provider: AnySocials) {
-    
+  async signInWithProvider(name: string, email: string, provider: AnySocials) {
     try {
+      console.log(name, email);
+      
       const existingUser = await this.prismaService.user.findUnique({
         where: {
           email,
@@ -75,12 +82,7 @@ export class AuthService {
         return successResponse(
           StatusCodes.OK,
           'User authenticated!',
-          {
-            name: existingUser.name,
-            email: existingUser.email,
-            username: existingUser.username,
-            resumeCount: existingUser.resumeCount
-          },
+          existingUser,
         );
       }
       const username = email.split('@')[0];
@@ -90,14 +92,13 @@ export class AuthService {
           email,
           username,
           anySocials: provider,
-          
         },
       });
       return successResponse(StatusCodes.CREATED, 'User created succesfully!', {
         name: name,
         email: email,
         username: username,
-        resumeCount: user.resumeCount
+        resumeCount: user.resumeCount,
       });
     } catch (error) {
       return errorResponse(
