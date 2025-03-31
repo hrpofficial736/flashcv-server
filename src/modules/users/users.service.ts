@@ -1,6 +1,5 @@
 import { Get, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { errorResponse, successResponse } from 'src/common/utils/response.util';
 import { StatusCodes } from 'src/common/constants/status-codes';
 
 @Injectable()
@@ -9,12 +8,23 @@ export class UsersService {
     async fetchDataService (username: string) {
         try {
             const user = await this.prismaService.user.findUnique({
-                where: {username}
+                where: {username},
             })
-            if (!user) return errorResponse(StatusCodes.NOT_FOUND, 'User not found!');
-            return successResponse(StatusCodes.OK, "Fetched data successfully!", user);
+            if (!user) return {
+              statusCode: StatusCodes.NOT_FOUND,
+              message: 'User not found!',
+            };
+
+            return {
+              statusCode: StatusCodes.OK,
+              message: 'Fetched data successfully!',
+              data: { ...user },
+            };
         } catch (error) {
-            return errorResponse(StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error!");
+            return {
+          statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+          message: 'Internal Server Error!',
+        };
         }
     }
 }

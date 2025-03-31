@@ -1,40 +1,98 @@
-import { Body, Controller, Post, UseGuards, Req, Param } from '@nestjs/common';
-import {Request} from 'express';
+import {
+  Body,
+  Controller,
+  Post,
+  UseGuards,
+  Req,
+  Param,
+  Res,
+  Get,
+} from '@nestjs/common';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { AuthGuard } from 'src/common/guards/request.guard';
 import { AnySocials } from '@prisma/client';
+import { OAuthGuard } from 'src/common/guards/oauth.guard';
+import { JwtService } from 'src/common/services/jwt.service';
+import { StatusCodes } from 'src/common/constants/status-codes';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private jwtService: JwtService,
+  ) {}
   @Post('login')
-  @UseGuards(AuthGuard)
-  loginController(@Req() request: Request) {
-    return this.authService.login(
-      request.user !== undefined && request.user['email'],
+  async loginController(
+    @Body() body: { email: string; password: string },
+    @Res() response: Response,
+  ) {
+    const responseFromService = await this.authService.login(
+      body.email,
+      body.password,
     );
+    response.cookie('auth_refresh_token', responseFromService, {
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+    });
+    response.status(responseFromService.statusCode).json(responseFromService);
   }
   @Post('register')
-  @UseGuards(AuthGuard)
-  registerController(@Req() request: Request, @Body() body: { name: string }) {
-    console.log(body);
-
-    return this.authService.register(
+  async registerController(
+    @Body() body: { name: string; email: string; password: string },
+    @Res() response: Response,
+  ) {
+    const responseFromService = await this.authService.register(
       body.name,
-      request.user !== undefined && request.user['email'],
+      body.email,
+      body.password,
     );
+    response.cookie(
+      'auth_refresh_token',
+      responseFromService.data?.refreshToken,
+      {
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+      },
+    );
+    response
+      .status(responseFromService.statusCode)
+      .json({
+        message: responseFromService.message,
+        data: {...responseFromService.data?.user, password: undefined},
+      });
   }
+  @Get('refresh-access-token')
+  refreshAccessTokenController(
+    @Req() request: Request,
+    @Res() response: Response,
+  ) {
+    const refreshToken = request.cookies.auth_refresh_token;
+
+
+    const newAccessToken = this.jwtService.refreshAccessToken(refreshToken);
+    response.status(StatusCodes.CREATED).json({
+      accessToken: newAccessToken,
+    });
+  }
+
   @Post('signIn/:provider')
-  @UseGuards(AuthGuard)
-  signInWithProviderController (@Req() request: Request, @Param() params: {provider: string}) {
-    
+  @UseGuards(OAuthGuard)
+  signInWithProviderController(
+    @Req() request: Request,
+    @Param() params: { provider: string },
+  ) {
     if (request.user !== undefined) {
-      
       return this.authService.signInWithProvider(
-      request.user["user_metadata"]["full_name"],
-      request.user['email'],
-      params.provider.toUpperCase() as AnySocials
-    );
-  }
+        request.user['name'],
+        params.provider === 'google'
+          ? request.user['email']
+          : request.user['confirmed_email'],
+        request.user['profile_image_url'] ?? request.user['picture'],
+        params.provider.toUpperCase() as AnySocials,
+        request.user['access_token'],
+      );
+    }
   }
 }

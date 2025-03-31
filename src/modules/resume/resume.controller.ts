@@ -1,13 +1,15 @@
-import { Body, Controller, Headers, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ResumeService } from './resume.service';
 import { createReadStream } from 'fs';
 import * as getRawBody from 'raw-body';
 import { Request } from 'express';
+import { AuthGuard } from 'src/common/guards/request.guard';
 
 @Controller('resume')
 export class ResumeController {
   constructor(private readonly service: ResumeService) {}
   @Post('/upload/:username')
+  @UseGuards(AuthGuard)
   async uploadResume(
     @Req() req: Request,
     @Param('username') username: string,
@@ -15,12 +17,7 @@ export class ResumeController {
     @Headers("resume-title") title: string
   ) {
     const fileBuffer : Buffer = await getRawBody(req, {encoding: null});
-    console.log(
-      'Received binary data for:',
-      fileName,
-      'Size:',
-      fileBuffer.length,
-    );
+    
     return this.service.upload(fileBuffer, fileName, username, title);
   }
 }
