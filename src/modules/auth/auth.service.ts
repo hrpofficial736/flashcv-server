@@ -13,40 +13,44 @@ export class AuthService {
     private prismaService: PrismaService,
     private jwtService: JwtService,
   ) {}
-  async login(email: string, password: string): Promise<ResponseInterface> {
+  async login(email: string, password: string) {
     try {
       const existingUser = await this.prismaService.user.findUnique({
         where: {
           email,
         },
       });
-      if (existingUser) {
-        const samePassword = await bcrypt.compare(
-          password,
-          existingUser.password!,
-        );
-        if (samePassword) {
-          const signedAccessToken = this.jwtService.signAccessToken(
-            existingUser.username,
-          );
-          const signedRefreshToken = this.jwtService.signRefreshToken(
-            existingUser.username,
-          );
-
-          return {
-            statusCode: StatusCodes.OK,
-            message: 'User authenticated successfully!',
-            data: { ...existingUser, signedAccessToken, signedRefreshToken },
-          };
-        }
+      if (!existingUser) {
+        return {
+          statusCode: StatusCodes.NOT_FOUND,
+          message: 'User not found!',
+        };
+      }
+      const samePassword = await bcrypt.compare(
+        password,
+        existingUser.password!,
+      );
+      if (!samePassword) {
         return {
           statusCode: StatusCodes.BAD_REQUEST,
           message: 'Wrong Password!',
         };
       }
+      const signedAccessToken = this.jwtService.signAccessToken(
+        existingUser.username,
+      );
+      const signedRefreshToken = this.jwtService.signRefreshToken(
+        existingUser.username,
+      );
+
       return {
-        statusCode: StatusCodes.NOT_FOUND,
-        message: 'User not found!',
+        statusCode: StatusCodes.OK,
+        message: 'User authenticated successfully!',
+        data: {
+          existingUser,
+          accessToken: signedAccessToken,
+          refreshToken: signedRefreshToken,
+        },
       };
     } catch (error) {
       return {
@@ -56,13 +60,8 @@ export class AuthService {
     }
   }
 
-  async register(
-    name: string,
-    email: string,
-    password: string,
-  ) {
+  async register(name: string, email: string, password: string) {
     try {
-
       const existingUser = await this.prismaService.user.findUnique({
         where: {
           email,
@@ -89,11 +88,14 @@ export class AuthService {
       const signedAccessToken = this.jwtService.signAccessToken(username);
       const signedRefreshToken = this.jwtService.signRefreshToken(username);
 
-     
       return {
         statusCode: StatusCodes.CREATED,
         message: 'User created successfully!',
-        data: { user, accessToken: signedAccessToken, refreshToken: signedRefreshToken },
+        data: {
+          user,
+          accessToken: signedAccessToken,
+          refreshToken: signedRefreshToken,
+        },
       };
     } catch (error) {
       return {
@@ -107,12 +109,13 @@ export class AuthService {
     email: string,
     imageUrl: string,
     provider: AnySocials,
-    token: string,
   ) {
     try {
+      console.log(email);
+      
       const existingUser = await this.prismaService.user.findUnique({
         where: {
-          email,
+          email: email,
         },
       });
       if (existingUser) {
@@ -129,6 +132,8 @@ export class AuthService {
         };
       }
       const username = email.split('@')[0];
+      console.log(username);
+      
       const user = await this.prismaService.user.create({
         data: {
           name,
@@ -138,19 +143,15 @@ export class AuthService {
           imageUrl: imageUrl,
         },
       });
+      
       return {
         statusCode: StatusCodes.OK,
         message: 'User authenticated successfully!',
-        data: {
-          name: name,
-          email: email,
-          username: username,
-          resumeCount: user.resumeCount,
-          imageUrl: imageUrl,
-          accessToken: token,
-        },
+        data: user,
       };
     } catch (error) {
+      console.log(error);
+      
       return {
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         message: 'Internal server error!',

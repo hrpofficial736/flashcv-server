@@ -30,11 +30,25 @@ export class AuthController {
       body.email,
       body.password,
     );
-    response.cookie('auth_refresh_token', responseFromService, {
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
+    response.cookie(
+      'auth_refresh_token',
+      responseFromService.data?.refreshToken,
+      {
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+      },
+    );
+
+    response.status(responseFromService.statusCode).json({
+      message: responseFromService.message,
+      data: {
+        ...responseFromService.data?.existingUser,
+        accessToken: responseFromService.data?.accessToken,
+        password: undefined,
+      },
     });
-    response.status(responseFromService.statusCode).json(responseFromService);
   }
   @Post('register')
   async registerController(
@@ -46,6 +60,7 @@ export class AuthController {
       body.email,
       body.password,
     );
+
     response.cookie(
       'auth_refresh_token',
       responseFromService.data?.refreshToken,
@@ -56,12 +71,14 @@ export class AuthController {
         secure: true,
       },
     );
-    response
-      .status(responseFromService.statusCode)
-      .json({
-        message: responseFromService.message,
-        data: {...responseFromService.data?.user, password: undefined},
-      });
+    response.status(responseFromService.statusCode).json({
+      message: responseFromService.message,
+      data: {
+        ...responseFromService.data?.user,
+        accessToken: responseFromService.data?.accessToken,
+        password: undefined,
+      },
+    });
   }
   @Get('refresh-access-token')
   refreshAccessTokenController(
@@ -70,29 +87,34 @@ export class AuthController {
   ) {
     const refreshToken = request.cookies.auth_refresh_token;
 
-
     const newAccessToken = this.jwtService.refreshAccessToken(refreshToken);
     response.status(StatusCodes.CREATED).json({
       accessToken: newAccessToken,
     });
   }
 
-  @Post('signIn/:provider')
+  @Post('signIn')
   @UseGuards(OAuthGuard)
-  signInWithProviderController(
+  async signInWithProviderController(
     @Req() request: Request,
-    @Param() params: { provider: string },
+    @Res() response: Response,
   ) {
     if (request.user !== undefined) {
-      return this.authService.signInWithProvider(
+      const provider : string = request.headers['x-auth-provider'] as string;
+      console.log(request.user);
+      
+      const responseFromService = await this.authService.signInWithProvider(
         request.user['name'],
-        params.provider === 'google'
+        provider === 'google'
           ? request.user['email']
           : request.user['confirmed_email'],
         request.user['profile_image_url'] ?? request.user['picture'],
-        params.provider.toUpperCase() as AnySocials,
-        request.user['access_token'],
+        provider.toUpperCase() as AnySocials,
       );
+      response.status(responseFromService.statusCode).json({
+        message: 'User authenticated successfully!',
+        data: {...responseFromService.data, accessToken: request.user['access_token']},
+      });
     }
   }
 }

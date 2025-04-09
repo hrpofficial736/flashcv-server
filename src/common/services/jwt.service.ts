@@ -16,7 +16,7 @@ export class JwtService {
       ) as jwt.JwtPayload;
       return decoded;
     } catch (error) {
-      throw new UnauthorizedException('Invalid or expired token');
+      console.log('invalid token : ', error);
     }
   }
 
@@ -53,6 +53,8 @@ export class JwtService {
       const { username } = decoded;
       return this.signAccessToken(username);
     } catch (error) {
+      console.log('error in refresh token : ', error);
+      
       return error;
     }
   }

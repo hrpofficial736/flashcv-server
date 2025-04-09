@@ -15,13 +15,14 @@ export class AuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers.authorization;
-
+    
     if (!authHeader) {
       throw new UnauthorizedException('Authorization header missing');
     }
 
     const token = authHeader.split(' ')[1];
     const decoded = this.jwtService.verifyToken(token);
+    if (!decoded) return false;
     request.user = decoded;
 
     if (decoded) return true;
