@@ -14,6 +14,7 @@ import { AnySocials } from '@prisma/client';
 import { OAuthGuard } from 'src/common/guards/oauth.guard';
 import { JwtService } from 'src/common/services/jwt.service';
 import { StatusCodes } from 'src/common/constants/status-codes';
+import { CompositeGuard } from 'src/common/guards/composite.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -26,6 +27,7 @@ export class AuthController {
     @Body() body: { email: string; password: string },
     @Res() response: Response,
   ) {
+    
     const responseFromService = await this.authService.login(
       body.email,
       body.password,
@@ -101,7 +103,6 @@ export class AuthController {
   ) {
     if (request.user !== undefined) {
       const provider : string = request.headers['x-auth-provider'] as string;
-      console.log(request.user);
       
       const responseFromService = await this.authService.signInWithProvider(
         request.user['name'],

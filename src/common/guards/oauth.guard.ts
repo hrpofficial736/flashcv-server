@@ -37,7 +37,6 @@ export class OAuthGuard implements CanActivate {
         throw new UnauthorizedException('Unsupported auth provider');
       }
     } catch (error) {
-      console.error(error?.response?.data || error.message);
       throw new UnauthorizedException('OAuth verification failed');
     }
   }

@@ -14,6 +14,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
   async login(email: string, password: string) {
+    
     try {
       const existingUser = await this.prismaService.user.findUnique({
         where: {
@@ -111,7 +112,6 @@ export class AuthService {
     provider: AnySocials,
   ) {
     try {
-      console.log(email);
       
       const existingUser = await this.prismaService.user.findUnique({
         where: {
@@ -132,7 +132,6 @@ export class AuthService {
         };
       }
       const username = email.split('@')[0];
-      console.log(username);
       
       const user = await this.prismaService.user.create({
         data: {
@@ -150,7 +149,6 @@ export class AuthService {
         data: user,
       };
     } catch (error) {
-      console.log(error);
       
       return {
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
